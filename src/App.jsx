@@ -58,6 +58,7 @@ const App = () => {
   const [playerHealBlocked, setPlayerHealBlocked] = useState(false);
   const [aiHealBlocked, setAIHealBlocked] = useState(false);
   const [result, setResult] = useState(null);
+  const [feedback, setFeedback] = useState("");
 
   const handleCardSelect = (card, index) => {
     setSelectedCard({ ...card, index });
@@ -206,6 +207,8 @@ const App = () => {
     setPlayerHP(Math.max(0, pHP));
     setAIHP(Math.max(0, aHP));
     setLog([...log, `--- Turn ${turn} ---`, ...roundLog]);
+    setFeedback(roundLog.join("\n"));
+    setTimeout(() => setFeedback(""), 2500);
     setTurn(turn + 1);
     setSelectedCard(null);
 
@@ -281,11 +284,11 @@ const App = () => {
       >
         カードを出す
       </button>
-      <div className="text-left text-xs bg-gray-100 text-gray-800 p-2 rounded h-48 overflow-y-scroll">
-        {log.map((line, i) => (
-          <div key={i}>{line}</div>
-        ))}
-      </div>
+      {feedback && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white px-6 py-4 rounded shadow-lg text-xl font-bold z-50 animate-fade">
+          {feedback}
+        </div>
+      )}
     </div>
   );
 };
