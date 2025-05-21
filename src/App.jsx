@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Fragment } from "react";
 
 const INITIAL_CARDS = [
   { name: "sword", label: "剣", damage: 5 },
@@ -62,6 +62,7 @@ const App = () => {
   const [playerBombNext, setPlayerBombNext] = useState(null);
   const [playerBombUsed, setPlayerBombUsed] = useState(false);
   const [aiBombNext, setAIBombNext] = useState(null);
+  const [aiBombUsed, setAIBombUsed] = useState(false);
   const [playerHealBlocked, setPlayerHealBlocked] = useState(false);
   const [aiHealBlocked, setAIHealBlocked] = useState(false);
   const [result, setResult] = useState(null);
@@ -115,7 +116,7 @@ const App = () => {
         roundLog.push(`あなたの爆弾は不発に終わった`);
       }
     }
-    if (aiBombNext) {
+    if (aiBombNext === turn - 1) {
       if (Math.random() > 0.3) {
         if (selectedCard && selectedCard.name === "shield") {
           roundLog.push(`あなたの盾が相手の爆弾を防いだ`);
@@ -126,6 +127,7 @@ const App = () => {
       } else {
         roundLog.push(`相手の爆弾は不発に終わった`);
       }
+      setAIBombNext(null);
     }
 
     // メインカード処理（処理順に基づく）
@@ -250,10 +252,24 @@ const App = () => {
     }
     setAICards(newAICards);
 
+    // カードが全てなくなったら、HPの少ない方を敗北判定
+    if (newPlayerCards.length === 0 && newAICards.length === 0 && !result) {
+      if (pHP < aHP) {
+        setResult("あなたの敗北（HPが少ないため）");
+      } else if (aHP < pHP) {
+        setResult("あなたの勝利（相手のHPが少ないため）");
+      } else {
+        setResult("引き分け（HP同数）");
+      }
+    }
+
     // (Bomb setup is now handled in handleCardSelect)
-    // Let AI randomly plant a bomb in turn 1-3 with 1/3 chance if not already used
+    // Let AI randomly plant a bomb in turn 1-3 with 3/4 chance if not already used
     const aiBombChance = Math.random();
-    setAIBombNext(turn <= 3 && !aiBombNext && aiBombChance < 0.75 ? true : null);
+    if (turn <= 3 && aiBombNext === null && !aiBombUsed && aiBombChance < 0.75) {
+      setAIBombNext(turn);
+      setAIBombUsed(true);
+    }
     setPlayerHealBlocked(newPlayerHealBlocked);
     setAIHealBlocked(newAIHealBlocked);
   };
@@ -376,20 +392,45 @@ const App = () => {
             <small className="col-span-full text-white text-left mt-2">
               ※ステルスアクションはメインアクションと同時に選択できます
             </small>
+            <small className="col-span-full text-white text-left">
+              ※爆弾は3ターン以内に仕掛ける必要があります。
+            </small>
           </div>
         </div>
       )}
+      {/* バトルログ */}
+      <div className="mt-4 text-left bg-gray-800 bg-opacity-75 p-3 rounded max-h-64 overflow-y-auto font-mono text-sm text-white space-y-1">
+        {log.map((entry, idx) => (
+          <div key={idx}>{entry}</div>
+        ))}
+      </div>
       <button
         className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
         onClick={handlePlay}
-        disabled={(!selectedCard && !selectedBombCard) || result}
+        disabled={!selectedCard || result}
       >
         カードを出す
       </button>
       {feedback && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white px-6 py-4 rounded shadow-lg text-xl font-bold z-50 animate-fade">
-          {feedback}
-        </div>
+        <Fragment>
+          {/* バックドロップ */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
+          {/* モーダルコンテナ */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+              <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">Battle Summary</h2>
+              <div className="font-mono text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto text-sm">
+                {feedback}
+              </div>
+              <button
+                onClick={() => setFeedback("")}
+                className="mt-6 block mx-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </Fragment>
       )}
     </div>
   );
