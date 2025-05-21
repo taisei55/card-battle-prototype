@@ -274,7 +274,7 @@ const App = () => {
       )}
       <div>
         <div className="mb-2 font-bold text-lg text-left">メインアクション枠</div>
-        <div className="flex flex-wrap justify-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center">
           {(() => {
             const grouped = {};
             playerCards
@@ -287,13 +287,13 @@ const App = () => {
               const info = CARD_INFO[name];
               const overlapOffset = 10;
               const groupWidth = group.length > 1
-                ? `calc(min(20vw,120px) + ${(group.length - 1) * overlapOffset}px)`
-                : "min(20vw,120px)";
+                ? `calc(min(40vw,120px) + ${(group.length - 1) * overlapOffset}px)`
+                : "min(40vw,120px)";
               return (
                 <div
                   key={name}
-                  className="relative m-1"
-                  style={{ width: groupWidth, height: "min(32vw,200px)" }}
+                  className="relative"
+                  style={{ width: groupWidth, height: "min(40vw,200px)" }}
                 >
                   {group.map((card, i) => (
                     <button
@@ -305,15 +305,14 @@ const App = () => {
                       style={{
                         position: "absolute",
                         left: `${i * overlapOffset}px`,
-                        width: "min(20vw, 120px)",
-                        height: "min(32vw, 200px)",
+                        width: "min(40vw, 120px)",
                         zIndex: group.length - i
                       }}
                       disabled={result}
                     >
                       <img src={info.image} alt={info.label} className="w-20 h-20 mb-1 object-contain" />
                       <span className="font-bold break-words">{info.label}</span>
-                      <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal max-h-16 overflow-hidden">
+                      <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal">
                         {info.description}
                       </span>
                     </button>
@@ -327,7 +326,7 @@ const App = () => {
       {turn <= 3 && !playerBombUsed && (
         <div className="mt-4">
           <div className="mb-2 font-bold text-lg text-left">ステルスアクション枠</div>
-          <div className="flex flex-wrap justify-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center">
             {(() => {
               const grouped = {};
               playerCards
@@ -340,13 +339,13 @@ const App = () => {
                 const info = CARD_INFO[name];
                 const overlapOffset = 10;
                 const groupWidth = group.length > 1
-                  ? `calc(min(20vw,120px) + ${(group.length - 1) * overlapOffset}px)`
-                  : "min(20vw,120px)";
+                  ? `calc(min(40vw,120px) + ${(group.length - 1) * overlapOffset}px)`
+                  : "min(40vw,120px)";
                 return (
                   <div
                     key={name}
-                    className="relative m-1"
-                    style={{ width: groupWidth, height: "min(32vw,200px)" }}
+                    className="relative"
+                    style={{ width: groupWidth, height: "min(40vw,200px)" }}
                   >
                     {group.map((card, i) => (
                       <button
@@ -358,15 +357,14 @@ const App = () => {
                         style={{
                           position: "absolute",
                           left: `${i * overlapOffset}px`,
-                          width: "min(20vw, 120px)",
-                          height: "min(32vw, 200px)",
+                          width: "min(40vw, 120px)",
                           zIndex: group.length - i
                         }}
                         disabled={result}
                       >
                         <img src={info.image} alt={info.label} className="w-20 h-20 mb-1 object-contain" />
                         <span className="font-bold break-words">{info.label}</span>
-                        <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal max-h-16 overflow-hidden">
+                        <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal">
                           {info.description}
                         </span>
                       </button>
