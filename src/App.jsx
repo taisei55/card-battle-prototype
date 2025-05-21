@@ -373,10 +373,10 @@ const App = () => {
                 );
               });
             })()}
+            <small className="col-span-full text-white text-left mt-2">
+              ※ステルスアクションはメインアクションと同時に選択できます
+            </small>
           </div>
-          <small className="text-white block text-left">
-            ※ステルスアクションはメインアクションと同時に選択できます
-          </small>
         </div>
       )}
       <button
