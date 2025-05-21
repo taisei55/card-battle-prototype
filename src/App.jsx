@@ -278,7 +278,7 @@ const App = () => {
     <div
       className="min-h-screen bg-gray-900 text-gray-100 font-serif p-4 mx-auto text-center space-y-4 max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-5xl"
     >
-      <h1 className="text-xl font-bold">One Day Dual</h1>
+      <h1 className="text-xl font-bold">One Day Duel</h1>
       <div className="flex justify-between">
         <span>あなた: HP {playerHP}</span>
         <span>相手: HP {aiHP}</span>
