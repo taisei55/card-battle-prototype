@@ -9,6 +9,7 @@ const INITIAL_CARDS = [
   { name: "heal", label: "回復", heal: 1 },
   { name: "shield", label: "盾" },
   { name: "shield", label: "盾" },
+  { name: "bomb", label: "爆弾" }
 ];
 
 const CARD_INFO = {
@@ -40,6 +41,11 @@ const CARD_INFO = {
     label: "盾",
     image: "/images/shield.png",
     description: "全攻撃を防ぐ"
+  },
+  bomb: {
+    label: "爆弾",
+    image: "/images/bomb.png",
+    description: "次ターンに起動（盾で無効／1回限定）"
   }
 };
 
@@ -51,6 +57,7 @@ const App = () => {
   const [aiCards, setAICards] = useState([...INITIAL_CARDS]);
   const [log, setLog] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [selectedBombCard, setSelectedBombCard] = useState(null);
   const [bombPlanted, setBombPlanted] = useState(false);
   const [playerBombNext, setPlayerBombNext] = useState(null);
   const [playerBombUsed, setPlayerBombUsed] = useState(false);
@@ -61,14 +68,30 @@ const App = () => {
   const [feedback, setFeedback] = useState("");
 
   const handleCardSelect = (card, index) => {
-    setSelectedCard({ ...card, index });
+    if (card.name === "bomb") {
+      if (selectedBombCard?.index === index) {
+        setSelectedBombCard(null);
+        setPlayerBombNext(null);
+      } else {
+        setPlayerBombNext(turn);
+        setSelectedBombCard({ ...card, index });
+      }
+    } else {
+      if (selectedCard?.index === index) {
+        setSelectedCard(null);
+      } else {
+        setSelectedCard({ ...card, index });
+      }
+    }
   };
 
   const handlePlay = () => {
     if (playerHP <= 0 || aiHP <= 0) return;
-    if (!selectedCard) return;
+    if (!selectedCard && !selectedBombCard) return;
     const newPlayerCards = [...playerCards];
-    newPlayerCards.splice(selectedCard.index, 1);
+    if (selectedCard && selectedCard.name !== "bomb") {
+      newPlayerCards.splice(selectedCard.index, 1);
+    }
 
     const aiChoiceIndex = Math.floor(Math.random() * aiCards.length);
     const aiCard = aiCards[aiChoiceIndex];
@@ -80,7 +103,7 @@ const App = () => {
     let aHP = aiHP;
     let roundLog = [];
 
-    if (playerBombNext) {
+    if (playerBombNext === turn - 1) {
       if (Math.random() > 0.3) {
         if (aiCard.name === "shield") {
           roundLog.push(`相手の盾があなたの爆弾を防いだ`);
@@ -94,7 +117,7 @@ const App = () => {
     }
     if (aiBombNext) {
       if (Math.random() > 0.3) {
-        if (selectedCard.name === "shield") {
+        if (selectedCard && selectedCard.name === "shield") {
           roundLog.push(`あなたの盾が相手の爆弾を防いだ`);
         } else {
           pHP -= 4;
@@ -136,7 +159,7 @@ const App = () => {
             newAICards.splice(healIndex, 1);
           }
         } else {
-          if (playerCard.name === "shield" || playerCard.name === "dagger") {
+          if (playerCard && (playerCard.name === "shield" || playerCard.name === "dagger")) {
             roundLog.push("あなたの盾/小剣が相手の攻撃を防いだ");
             return;
           }
@@ -158,7 +181,7 @@ const App = () => {
           aHP -= 2;
           roundLog.push("あなたの小剣が命中！ 相手に2ダメージ");
         } else {
-          if (playerCard.name === "shield") {
+          if (playerCard && playerCard.name === "shield") {
             roundLog.push("あなたの盾が相手の攻撃を防いだ");
             return;
           }
@@ -174,7 +197,7 @@ const App = () => {
           aHP -= 5;
           roundLog.push("あなたの剣が命中！ 相手に5ダメージ");
         } else {
-          if (playerCard.name === "shield" || playerCard.name === "spear") {
+          if (playerCard && (playerCard.name === "shield" || playerCard.name === "spear")) {
             roundLog.push("あなたの盾/槍が相手の攻撃を防いだ");
             return;
           }
@@ -209,17 +232,25 @@ const App = () => {
     setLog([...log, `--- Turn ${turn} ---`, ...roundLog]);
     setFeedback(roundLog.join("\n"));
     setTimeout(() => setFeedback(""), 2500);
+
+    // Remove bomb card from player hand if used this turn
+    if (selectedBombCard) {
+      setPlayerBombUsed(true);
+      const updatedCards = [...playerCards];
+      updatedCards.splice(selectedBombCard.index, 1);
+      setPlayerCards(updatedCards);
+    }
+
     setTurn(turn + 1);
     setSelectedCard(null);
+    setSelectedBombCard(null);
 
-    setPlayerCards(newPlayerCards);
+    if (selectedCard) {
+      setPlayerCards(newPlayerCards);
+    }
     setAICards(newAICards);
 
-    setPlayerBombNext(bombPlanted && !playerBombUsed ? true : null);
-    if (bombPlanted && !playerBombUsed) {
-      setPlayerBombUsed(true);
-    }
-    setBombPlanted(false);
+    // (Bomb setup is now handled in handleCardSelect)
     // Let AI randomly plant a bomb in turn 1-3 with 1/3 chance if not already used
     const aiBombChance = Math.random();
     setAIBombNext(turn <= 3 && !aiBombNext && aiBombChance < 0.75 ? true : null);
@@ -229,7 +260,7 @@ const App = () => {
 
   return (
     <div
-      className="min-h-screen bg-gray-900 text-gray-100 font-serif p-4 max-w-md mx-auto text-center space-y-4"
+      className="min-h-screen bg-gray-900 text-gray-100 font-serif p-4 mx-auto text-center space-y-4 max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-5xl"
     >
       <h1 className="text-xl font-bold">One Day Dual</h1>
       <div className="flex justify-between">
@@ -241,46 +272,119 @@ const App = () => {
           ゲーム終了：{result}
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2">
-        {playerCards
-          .filter(card => card.name !== "bomb")
-          .map((card, idx) => {
-            const info = CARD_INFO[card.name];
-            return (
-              <button
-                key={idx}
-                onClick={() => handleCardSelect(card, idx)}
-                className="border rounded bg-white text-gray-800 text-xs p-2 disabled:text-gray-500 flex flex-col items-center"
-                disabled={result}
-              >
-                <img src={info.image} alt={info.label} className="w-8 h-8 mb-1" />
-                <span className="font-bold">{info.label}</span>
-                <span className="text-[10px] text-gray-600 text-center leading-tight">{info.description}</span>
-              </button>
-            );
-          })}
+      <div>
+        <div className="mb-2 font-bold text-lg text-left">メインアクション枠</div>
+        <div className="flex flex-wrap justify-center">
+          {(() => {
+            const grouped = {};
+            playerCards
+              .filter(card => card.name !== "bomb")
+              .forEach((card, idx) => {
+                if (!grouped[card.name]) grouped[card.name] = [];
+                grouped[card.name].push({ ...card, index: idx });
+              });
+            return Object.entries(grouped).map(([name, group]) => {
+              const info = CARD_INFO[name];
+              const overlapOffset = 10;
+              const groupWidth = group.length > 1
+                ? `calc(min(20vw,120px) + ${(group.length - 1) * overlapOffset}px)`
+                : "min(20vw,120px)";
+              return (
+                <div
+                  key={name}
+                  className="relative m-1"
+                  style={{ width: groupWidth, height: "min(32vw,200px)" }}
+                >
+                  {group.map((card, i) => (
+                    <button
+                      key={card.index}
+                      onClick={() => handleCardSelect({ name, label: card.label }, card.index)}
+                      className={`border rounded bg-white text-gray-800 text-xs p-2 disabled:text-gray-500 flex flex-col items-center transition-transform duration-200 ${
+                        selectedCard?.index === card.index ? "ring-4 ring-yellow-400 scale-105 shadow-lg" : ""
+                      }`}
+                      style={{
+                        position: "absolute",
+                        left: `${i * overlapOffset}px`,
+                        width: "min(20vw, 120px)",
+                        height: "min(32vw, 200px)",
+                        zIndex: group.length - i
+                      }}
+                      disabled={result}
+                    >
+                      <img src={info.image} alt={info.label} className="w-20 h-20 mb-1 object-contain" />
+                      <span className="font-bold break-words">{info.label}</span>
+                      <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal max-h-16 overflow-hidden">
+                        {info.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              );
+            });
+          })()}
+        </div>
       </div>
       {turn <= 3 && !playerBombUsed && (
-        <div className="block text-left">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              checked={bombPlanted}
-              onChange={(e) => setBombPlanted(e.target.checked)}
-              className="mr-2"
-              disabled={result}
-            />
-            爆弾を伏せる
-          </label>
-          <small className="text-white ml-6">
-            ※ 爆弾は最大1回、ターン3までに伏せることができます
+        <div className="mt-4">
+          <div className="mb-2 font-bold text-lg text-left">ステルスアクション枠</div>
+          <div className="flex flex-wrap justify-center">
+            {(() => {
+              const grouped = {};
+              playerCards
+                .filter(card => card.name === "bomb")
+                .forEach((card, idx) => {
+                  if (!grouped[card.name]) grouped[card.name] = [];
+                  grouped[card.name].push({ ...card, index: idx });
+                });
+              return Object.entries(grouped).map(([name, group]) => {
+                const info = CARD_INFO[name];
+                const overlapOffset = 10;
+                const groupWidth = group.length > 1
+                  ? `calc(min(20vw,120px) + ${(group.length - 1) * overlapOffset}px)`
+                  : "min(20vw,120px)";
+                return (
+                  <div
+                    key={name}
+                    className="relative m-1"
+                    style={{ width: groupWidth, height: "min(32vw,200px)" }}
+                  >
+                    {group.map((card, i) => (
+                      <button
+                        key={card.index}
+                        onClick={() => handleCardSelect({ name, label: card.label }, card.index)}
+                        className={`border rounded bg-white text-gray-800 text-xs p-2 disabled:text-gray-500 flex flex-col items-center transition-transform duration-200 ${
+                          selectedBombCard?.index === card.index ? "ring-4 ring-yellow-400 scale-105 shadow-lg" : ""
+                        }`}
+                        style={{
+                          position: "absolute",
+                          left: `${i * overlapOffset}px`,
+                          width: "min(20vw, 120px)",
+                          height: "min(32vw, 200px)",
+                          zIndex: group.length - i
+                        }}
+                        disabled={result}
+                      >
+                        <img src={info.image} alt={info.label} className="w-20 h-20 mb-1 object-contain" />
+                        <span className="font-bold break-words">{info.label}</span>
+                        <span className="text-xs text-gray-600 text-center leading-tight break-all whitespace-normal max-h-16 overflow-hidden">
+                          {info.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              });
+            })()}
+          </div>
+          <small className="text-white block text-left">
+            ※ステルスアクションはメインアクションと同時に選択できます
           </small>
         </div>
       )}
       <button
         className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
         onClick={handlePlay}
-        disabled={!selectedCard || result}
+        disabled={(!selectedCard && !selectedBombCard) || result}
       >
         カードを出す
       </button>
